@@ -21,9 +21,9 @@ class HEAD
 {
 public:
     int rows, cols;
-    vector<vector<float>> data;
+    vector<vector<double>> data;
 
-    HEAD(int r, int c) : rows(r), cols(c), data(r, vector<float>(c, 0)) {}
+    HEAD(int r, int c) : rows(r), cols(c), data(r, vector<double>(c, 0)) {}
 
     HEAD operator+(const HEAD &other) const
     {
@@ -93,7 +93,7 @@ void randomizeHEAD(HEAD &matrix)
     {
         for (int j = 0; j < matrix.cols; j++)
         {
-            matrix.data[i][j] = static_cast<float>(rand()) / RAND_MAX;
+            matrix.data[i][j] = static_cast<double>(rand()) / RAND_MAX;
         }
     }
 }

@@ -1,128 +1,107 @@
-#include "FeedForward.h"
 #include <cmath>
 #include <algorithm>
-
-// template<size_t M, size_t N, size_t P>
-// Matrix<M, N> Linear(const Matrix<M, P> &input, const Matrix<P, N> &W, double b) {   // output = input * W + b
-//     // TODO: optimize matrix multiplication inside
-//     Matrix<M, N> output;
-//     for (int i = 0; i < M; i++) for (int j = 0; j < N; j++) {
-//         output[i][j] = b;
-//         for (int k = 0; k < P; k++) output[i][j] += input[i][k] * W[k][j];
-//     }
-//     return output;
-// }
-
-// template<size_t N, size_t M>
-// Tensor3D<N, M, d_model> FeedForward(const Tensor3D<N, M, d_model> &input, const Matrix<d_model, d_ff> &W1, Array<N> b1,
-//                                                                           const Matrix<d_ff, d_model> &W2, Array<N> b2,
-//                                                                           bool use_bias) {
-//     Tensor3D<N, M, d_model> output;
-//     if (!use_bias) {
-//         fill(b1.begin(), b1.end(), 0);
-//         fill(b2.begin(), b2.end(), 0);
-//     }
-
-//     for (int i = 0; i < N; i++) {
-//         Matrix<M, d_model> h = Linear(input[i], W1, b1[i]);
-//         for (int j = 0; j < M; j++) for (int k = 0; k < d_model; k++) h[j][k] = std::max(0.0, h[j][k]);
-//         output[i] = Linear(h, W2, b2[i]);
-//     }
-//     return output;
-// }
-
-#include <vector>
-#include <algorithm>
 #include <iostream>
-#include <random>
+#include <vector>
+#include <stdexcept>
 
+using namespace std;
+
+// Define Matrix and Array types
 using Matrix = std::vector<std::vector<double>>;
+using Array = std::vector<double>;
 
-Matrix createMatrix(size_t rows, size_t cols, double init_value = 0.0)
+// Linear function for feedforward layer with bias
+Matrix Linear(const Matrix &input, const Matrix &W, double b)
 {
-    return Matrix(rows, std::vector<double>(cols, init_value));
+    size_t M = input.size(); // Number of rows in input
+    size_t N = W[0].size();  // Number of columns in W (output size)
+    size_t P = W.size();     // Number of rows in W (input size)
+
+    Matrix output(M, std::vector<double>(N, b)); // Initialize output with bias
+    for (size_t i = 0; i < M; i++)
+        for (size_t j = 0; j < N; j++)
+            for (size_t k = 0; k < P; k++)
+                output[i][j] += input[i][k] * W[k][j];
+    return output;
 }
 
-Matrix createRandomMatrix(size_t rows, size_t cols, double mean = 0.0, double stddev = 1.0)
+// FeedForward function, returning a single Matrix
+Matrix FeedForward(const Matrix &input,
+                   const Matrix &W1, const Array &b1,
+                   const Matrix &W2, const Array &b2,
+                   bool use_bias)
+{
+    size_t M = input.size();
+    size_t d_ff = W1[0].size();    // Number of columns in W1 (output dimension of first layer)
+    size_t d_model = W2[0].size(); // Number of columns in W2 (output dimension of second layer)
+
+    // Apply the first linear transformation and add bias
+    Matrix h = Linear(input, W1, use_bias ? b1[0] : 0.0);
+
+    // Apply ReLU activation function
+    for (size_t i = 0; i < M; i++)
+        for (size_t j = 0; j < d_ff; j++)
+            h[i][j] = std::max(0.0, h[i][j]);
+
+    // Apply the second linear transformation and add bias
+    Matrix output = Linear(h, W2, use_bias ? b2[0] : 0.0);
+
+    return output; // Returning a single Matrix
+}
+
+// Utility function to create a random matrix
+Matrix createRandomMatrix(size_t rows, size_t cols)
 {
     Matrix mat(rows, std::vector<double>(cols));
-    std::default_random_engine generator;
-    std::normal_distribution<double> distribution(mean, stddev);
-
-    for (size_t i = 0; i < rows; ++i)
-    {
-        for (size_t j = 0; j < cols; ++j)
-        {
-            mat[i][j] = distribution(generator);
-        }
-    }
+    for (size_t i = 0; i < rows; i++)
+        for (size_t j = 0; j < cols; j++)
+            mat[i][j] = (rand() % 100) / 100.0; // Random number between 0 and 1
     return mat;
 }
 
-std::vector<double> createRandomVector(size_t size, double mean = 0.0, double stddev = 1.0)
+// Utility function to create a random vector
+Array createRandomVector(size_t size)
 {
-    std::vector<double> vec(size);
-    std::default_random_engine generator;
-    std::normal_distribution<double> distribution(mean, stddev);
-
-    for (size_t i = 0; i < size; ++i)
-    {
-        vec[i] = distribution(generator);
-    }
+    Array vec(size);
+    for (size_t i = 0; i < size; i++)
+        vec[i] = (rand() % 100) / 100.0; // Random number between 0 and 1
     return vec;
 }
 
-// output = input * W + b
-Matrix Linear(const Matrix &input, const Matrix &W, double b)
-{
-    size_t M = input.size();    // input.row
-    size_t P = input[0].size(); // input.col= W.row
-    size_t N = W[0].size();     // W.col
+// int main()
+// {
+//     // Define weights and biases
+//     Matrix W1 = {{0.6, 0.1, 0.2, 0.7},
+//                  {0.4, 0.3, 0.7, 0.3},
+//                  {0.8, 0.4, 0.9, 0.4}};
 
-    Matrix output = createMatrix(M, N, b);
+//     Matrix W2 = {
+//         {0.1, 0.3, 0.5},
+//         {0.5, 0.5, 0.6},
+//         {0.6, 0.1, 0.8},
+//         {0.7, 0.8, 0.1}};
 
-    for (size_t i = 0; i < M; ++i)
-    {
-        for (size_t j = 0; j < N; ++j)
-        {
-            for (size_t k = 0; k < P; ++k)
-            {
-                output[i][j] += input[i][k] * W[k][j];
-            }
-        }
-    }
-    return output;
-}
+//     // Biases must match the number of output neurons for W1 and W2
+//     Array b1 = {0.3, 0.3, 0.3, 0.3}; // Biases for W1
+//     Array b2 = {0.2, 0.2, 0.2};      // Biases for W2
 
-std::vector<Matrix> FeedForward(const std::vector<Matrix> &input,
-                                const Matrix &W1, const std::vector<double> &b1,
-                                const Matrix &W2, const std::vector<double> &b2,
-                                bool use_bias)
-{
-    size_t N = input.size();
-    size_t M = input[0].size();
-    size_t d_ff = W1[0].size();
-    size_t d_model = W2[0].size();
+//     // Input matrices
+//     Matrix input = {
+//         {0.5, 0.7, 0.2},
+//         {0.4, 0.2, 0.1},
+//         {0.9, 0.4, 0.8}};
 
-    std::vector<Matrix> output(N, createMatrix(M, d_model));
+//     // Call FeedForward
+//     bool use_bias = true; // Set to true to use biases
+//     auto output = FeedForward(input, W1, b1, W2, b2, use_bias);
 
-    std::vector<double> b1_adj = use_bias ? b1 : std::vector<double>(M, 0.0);
-    std::vector<double> b2_adj = use_bias ? b2 : std::vector<double>(M, 0.0);
+//     // Print output
+//     for (const auto &mat : output)
+//     {
+//         for (const auto &val : mat)
+//             cout << val << " ";
+//         cout << endl;
+//     }
 
-    for (size_t i = 0; i < N; ++i)
-    {
-        Matrix h = Linear(input[i], W1, b1_adj[i]);
-
-        for (size_t j = 0; j < M; ++j)
-        {
-            for (size_t k = 0; k < d_ff; ++k)
-            {
-                h[j][k] = std::max(0.0, h[j][k]);
-            }
-        }
-
-        output[i] = Linear(h, W2, b2_adj[i]);
-    }
-
-    return output;
-}
+//     return 0;
+// }
