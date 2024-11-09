@@ -5,9 +5,24 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <math.h>
 
 #define EMBED_SIZE 200
 using namespace std;
+
+vector<float> load_vector_position(int position, int dimension)
+{ // khai bao
+    // double encoding[dimension] = {0.0};  // create array for position and assign all equal 0;
+    vector<float> encoding(dimension, 0.0);
+    for (int i = 0; i < dimension; i++)
+    { // check from 0 to number of dimention
+        if (i % 2 == 0)
+            encoding[i] = sin(position / pow(10000, i / dimension)); // funtion from paper, if the dimention is even we use sin;
+        else
+            encoding[i] = cos(position / pow(10000, (i - 1) / dimension)); // else if the dimention is odd we use cos;
+    }
+    return encoding; // resutl;
+}
 
 // Read embedding file
 void load_embeddings(const string &filename, unordered_map<string, vector<float>> &embeddings)
