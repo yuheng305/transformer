@@ -69,23 +69,17 @@ void EncoderLayer(const Matrix &input_embedding)
 
 int main()
 {
-    // freopen("input.txt", "r", stdin);
-    // freopen("output.txt", "w", stdout);
     unordered_map<string, vector<float>> embeddings;
-    load_embeddings("glove.100.200d.txt", embeddings); // Load file
+    load_embeddings("glove.100.200d.txt", embeddings);
 
     string sentence;
     cout << "Input a sentence: ";
     getline(cin, sentence);
 
-    // Words to vec
     vector<string> words = split_sentence(sentence);
     size_t num_tokens = words.size();
 
-    // Initialize input_embedding with the appropriate dimensions
     HEAD input_embedding(num_tokens, EMBEDDING_DIM);
-
-    // Populate input_embedding with embeddings for each word
     for (size_t i = 0; i < num_tokens; ++i)
     {
         vector<float> embedding = get_embedding(words[i], embeddings);
@@ -96,22 +90,23 @@ int main()
                 input_embedding.data[i][j] = embedding[j];
             }
         }
+
+        vector<float> position_vector = load_vector_position(i, EMBEDDING_DIM);
+        for (size_t j = 0; j < EMBEDDING_DIM; ++j)
+        {
+            input_embedding.data[i][j] += position_vector[j];
+        }
     }
 
     Matrix current_input = input_embedding.toMatrix();
-
-    // Stack 6 encoder layers
     for (int i = 0; i < 6; ++i)
     {
-        // printMatrix(current_input);
         cout << "Processing Encoder Layer " << i + 1 << endl;
         EncoderLayer(current_input);
-        printMatrix(current_input);
     }
 
-    // Output the final result after 6 encoder layers
     cout << "Final encoder output (after 6 layers):" << endl;
-    printMatrix(current_input); // Assuming you have a function to print matrices
+    printMatrix(current_input);
 
     return 0;
 }
