@@ -20,7 +20,7 @@ void AddnNorm(Matrix &target, Matrix &orig, double gamma = 1, double beta = 0)
         double mu = 0, sigma = 0;
 
         // Calculate mean (mu) and variance (sigma^2)
-        for (int j = 0; j < 512; ++j)
+        for (int j = 0; j < 200; ++j)
         {
             target[i][j] += orig[i][j];           // residual connections
             mu += target[i][j];                   // E[X]
@@ -28,10 +28,10 @@ void AddnNorm(Matrix &target, Matrix &orig, double gamma = 1, double beta = 0)
         }
 
         mu /= 512;
-        sigma = sqrt(sigma / 512 - mu * mu + 1e-10); // Var(X) = E[X^2] - E^2[X]
+        sigma = sqrt(sigma / 200 - mu * mu + 1e-10); // Var(X) = E[X^2] - E^2[X]
 
         // Apply normalization to each element
-        for (int j = 0; j < 512; ++j)
+        for (int j = 0; j < 200; ++j)
             target[i][j] = gamma / sigma * (target[i][j] - mu) + beta;
 
         // Optional optimized version
